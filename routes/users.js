@@ -16,10 +16,6 @@ let posts = [
   },
 ];
 
-/**
- * Get all users
- **/
-
 router.get("/", ensureUserLoggedIn, (req, res) => {
   res.send({ message: "Here is your Members Only content from the server..." });
 });
