@@ -6,25 +6,8 @@ require("dotenv").config();
 
 // Example:
 
-let posts = [
-  {
-    username: "User 1",
-    title: "Post 1",
-  },
-  {
-    username: "User 2",
-    title: "Post 2",
-  },
-];
-
 router.get("/", ensureUserLoggedIn, (req, res) => {
   res.send({ message: "Here is your Members Only content from the server..." });
-});
-
-router.get("/posts", ensureUserLoggedIn, (req, res) => {
-  const ipAddress = req.ip;
-  res.send(ipAddress);
-  // res.json(posts.filter((post) => post.username == req.username));
 });
 
 router.post("/login", (req, res) => {

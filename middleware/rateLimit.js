@@ -1,5 +1,3 @@
-const jwt = require("jsonwebtoken");
-const { SECRET_KEY } = require("../config");
 const redis = require("redis");
 const moment = require("moment");
 
@@ -10,33 +8,7 @@ const WINDOW_SIZE_IN_HOURS = 1;
 const MAX_WINDOW_REQUEST_COUNT = 100;
 const WINDOW_LOG_INTERVAL_IN_HOURS = 1;
 
-/**
- * Guards are the middleware to "prote3000\ct" routes.
- **/
-
-/**
- * Make sure the user is logged in
- **/
-
-function ensureUserLoggedIn(req, res, next) {
-  let token = _getToken(req);
-  if (token == null) return res.sendStatus(401);
-
-  try {
-    // Throws error on invalid/missing token
-    jwt.verify(token, SECRET_KEY);
-    // If we get here, a valid token was passed
-    next();
-  } catch (err) {
-    res.status(401).send({ error: "Unauthorized" });
-  }
-}
-
-/**
- * Make sure the rate limit is respected
- **/
-
-const customRedisRateLimiter = async (req, res, next) => {
+customRedisRateLimiter = async (req, res, next) => {
   await redisClient.connect();
   try {
     // check that redis client exists
@@ -111,21 +83,6 @@ const customRedisRateLimiter = async (req, res, next) => {
     next(error);
   }
 };
-
-function _getToken(req) {
-  // Return '' if header not found
-  if (!("authorization" in req.headers)) {
-    return "";
-  }
-
-  // Split header into 'Bearer' and token
-  let authHeader = req.headers["authorization"];
-  let [str, token] = authHeader.split(" ");
-
-  return str === "Bearer" ? token : "";
-}
-
 module.exports = {
-  ensureUserLoggedIn,
   customRedisRateLimiter,
 };
