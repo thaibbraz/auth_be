@@ -17,6 +17,8 @@ let posts = [
 ];
 
 router.get("/", ensureUserLoggedIn, (req, res) => {
+  const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  console.log("Este é o IP: ", ip);
   res.send({ message: "Here is your Members Only content from the server..." });
 });
 

@@ -3,7 +3,7 @@
 1. NodeJS
 2. Express
 3. JWT
-4. MongoDB
+4. Redis
 
 # Prerequisites
 
@@ -18,5 +18,7 @@ Clone the latest Repository
 Into the project directory
 
 Installing NPM dependencies
+
+Change to "master" branch
 
 Then simply start your app
