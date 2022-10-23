@@ -6,9 +6,9 @@ const moment = require("moment");
 const redisClient = redis.createClient();
 redisClient.on("error", (err) => console.log("Redis Client Error", err));
 
-const WINDOW_SIZE_IN_HOURS = 1;
-const MAX_WINDOW_REQUEST_COUNT = 100;
-const WINDOW_LOG_INTERVAL_IN_HOURS = 1;
+const WINDOW_SIZE_IN_HOURS = 0;
+const MAX_WINDOW_REQUEST_COUNT = 0;
+const WINDOW_LOG_INTERVAL_IN_HOURS = 0;
 
 /**
  * Guards are the middleware to "prote3000\ct" routes.
@@ -47,6 +47,13 @@ const redisRateLimiter = async (req, res, next) => {
     let token = _getToken(req);
     if (token == null) {
       token = req.ip;
+      WINDOW_SIZE_IN_HOURS = 1;
+      MAX_WINDOW_REQUEST_COUNT = 100;
+      WINDOW_LOG_INTERVAL_IN_HOURS = 1;
+    } else {
+      WINDOW_SIZE_IN_HOURS = 1;
+      MAX_WINDOW_REQUEST_COUNT = 200;
+      WINDOW_LOG_INTERVAL_IN_HOURS = 1;
     }
     // fetch records of current user using IP address, returns null when no record is found
     const record = await redisClient.get(token);
