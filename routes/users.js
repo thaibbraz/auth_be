@@ -1,16 +1,20 @@
 var express = require("express");
 var router = express.Router();
 const jwt = require("jsonwebtoken");
-const { ensureUserLoggedIn } = require("../middleware/guards");
+const {
+  ensureUserLoggedIn,
+  redisRateLimiter,
+} = require("../middleware/guards");
+
 require("dotenv").config();
 
 // Example:
 
-router.get("/", ensureUserLoggedIn, (req, res) => {
+router.get("/", ensureUserLoggedIn, redisRateLimiter, (req, res) => {
   res.send({ message: "Here is your Members Only content from the server..." });
 });
 
-router.post("/login", (req, res) => {
+router.post("/login", redisRateLimiter, (req, res) => {
   let { username } = req.body;
   let user = { name: username };
 

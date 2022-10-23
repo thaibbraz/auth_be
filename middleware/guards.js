@@ -36,16 +36,20 @@ function ensureUserLoggedIn(req, res, next) {
  * Make sure the rate limit is respected
  **/
 
-const customRedisRateLimiter = async (req, res, next) => {
+const redisRateLimiter = async (req, res, next) => {
   await redisClient.connect();
+
   try {
     // check that redis client exists
     if (!redisClient) {
       throw new Error("Redis client does not exist!");
-      process.exit(1);
+    }
+    let token = _getToken(req);
+    if (token == null) {
+      token = req.ip;
     }
     // fetch records of current user using IP address, returns null when no record is found
-    const record = await redisClient.get(req.ip);
+    const record = await redisClient.get(token);
     const currentRequestTime = moment();
     console.log("record: ", record);
     //  if no record is found , create a new record for user and store to redis
@@ -56,7 +60,7 @@ const customRedisRateLimiter = async (req, res, next) => {
         requestCount: 1,
       };
       newRecord.push(requestLog);
-      await redisClient.set(req.ip, JSON.stringify(newRecord));
+      await redisClient.set(token, JSON.stringify(newRecord));
       next();
     }
     // if record is found, parse it's value and calculate number of requests users has made within the last window
@@ -104,7 +108,7 @@ const customRedisRateLimiter = async (req, res, next) => {
           requestCount: 1,
         });
       }
-      await redisClient.set(req.ip, JSON.stringify(data));
+      await redisClient.set(token, JSON.stringify(data));
       next();
     }
   } catch (error) {
@@ -117,7 +121,6 @@ function _getToken(req) {
   if (!("authorization" in req.headers)) {
     return "";
   }
-
   // Split header into 'Bearer' and token
   let authHeader = req.headers["authorization"];
   let [str, token] = authHeader.split(" ");
@@ -127,5 +130,5 @@ function _getToken(req) {
 
 module.exports = {
   ensureUserLoggedIn,
-  customRedisRateLimiter,
+  redisRateLimiter,
 };
