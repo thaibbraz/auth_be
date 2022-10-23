@@ -3,6 +3,7 @@ var router = express.Router();
 const jwt = require("jsonwebtoken");
 const { ensureUserLoggedIn } = require("../middleware/guards");
 require("dotenv").config();
+
 // Example:
 
 let posts = [
@@ -17,21 +18,22 @@ let posts = [
 ];
 
 router.get("/", ensureUserLoggedIn, (req, res) => {
-  const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-  console.log("Este é o IP: ", ip);
   res.send({ message: "Here is your Members Only content from the server..." });
 });
 
 router.get("/posts", ensureUserLoggedIn, (req, res) => {
-  res.json(posts.filter((post) => post.username == req.username));
+  const ipAddress = req.ip;
+  res.send(ipAddress);
+  // res.json(posts.filter((post) => post.username == req.username));
 });
 
-router.get("/login", (req, res) => {
+router.post("/login", (req, res) => {
   let { username } = req.body;
   let user = { name: username };
 
   // Create token containing user name
   let token = jwt.sign(user, process.env.SECRET_KEY);
+
   res.json({ accessToken: token });
 });
 
