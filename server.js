@@ -8,7 +8,7 @@ let indexRouter = require("./routes/index");
 let usersRouter = require("./routes/users");
 
 //  Routes
-// app.use(rateLimiter);
+
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 

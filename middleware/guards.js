@@ -1,17 +1,19 @@
 const jwt = require("jsonwebtoken");
 const { SECRET_KEY } = require("../config");
-const redis = require("redis");
+
 const moment = require("moment");
+const redis = require("ioredis");
+const redisClient = redis.createClient({
+  port: process.env.REDIS_PORT || 6379,
+  host: process.env.REDIS_HOST || "localhost",
+});
 
-const redisClient = redis.createClient();
-redisClient.on("error", (err) => console.log("Redis Client Error", err));
-
-const WINDOW_SIZE_IN_HOURS = 0;
-const MAX_WINDOW_REQUEST_COUNT = 0;
-const WINDOW_LOG_INTERVAL_IN_HOURS = 0;
+let WINDOW_SIZE_IN_HOURS;
+let MAX_WINDOW_REQUEST_COUNT;
+let WINDOW_LOG_INTERVAL_IN_HOURS;
 
 /**
- * Guards are the middleware to "prote3000\ct" routes.
+ * Guards are the middleware to "protet" routes.
  **/
 
 /**
@@ -37,26 +39,33 @@ function ensureUserLoggedIn(req, res, next) {
  **/
 
 const redisRateLimiter = async (req, res, next) => {
-  await redisClient.connect();
+  redisClient.on("connect", function () {
+    console.log("connected");
+  });
 
   try {
     // check that redis client exists
     if (!redisClient) {
       throw new Error("Redis client does not exist!");
     }
-    let token = _getToken(req);
-    if (token == null) {
-      token = req.ip;
-      WINDOW_SIZE_IN_HOURS = 1;
+
+    let key = _getToken(req);
+
+    console.log("key: ", key);
+    if (key == null) {
+      console.log("here for NON auth");
+      key = req.ip;
+      WINDOW_SIZE_IN_HOURS = 10;
       MAX_WINDOW_REQUEST_COUNT = 100;
       WINDOW_LOG_INTERVAL_IN_HOURS = 1;
     } else {
-      WINDOW_SIZE_IN_HOURS = 1;
+      console.log("here for auth");
+      WINDOW_SIZE_IN_HOURS = 10;
       MAX_WINDOW_REQUEST_COUNT = 200;
       WINDOW_LOG_INTERVAL_IN_HOURS = 1;
     }
-    // fetch records of current user using IP address, returns null when no record is found
-    const record = await redisClient.get(token);
+    // fetch records of current user using IP or token, returns null when no record is found
+    const record = await redisClient.get(key);
     const currentRequestTime = moment();
     console.log("record: ", record);
     //  if no record is found , create a new record for user and store to redis
@@ -67,12 +76,12 @@ const redisRateLimiter = async (req, res, next) => {
         requestCount: 1,
       };
       newRecord.push(requestLog);
-      await redisClient.set(token, JSON.stringify(newRecord));
+      await redisClient.set(key, JSON.stringify(newRecord));
       next();
     }
     // if record is found, parse it's value and calculate number of requests users has made within the last window
-    let data = [];
-    data.push(record);
+    let data = [JSON.stringify(record)];
+    // data.push();
 
     let windowStartTimestamp = moment()
       .subtract(WINDOW_SIZE_IN_HOURS, "hours")
