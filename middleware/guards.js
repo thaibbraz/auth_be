@@ -8,9 +8,9 @@ const redisClient = redis.createClient({
   host: process.env.REDIS_HOST || "localhost",
 });
 
-let WINDOW_SIZE_IN_HOURS;
-let MAX_WINDOW_REQUEST_COUNT;
-let WINDOW_LOG_INTERVAL_IN_HOURS;
+// let WINDOW_SIZE_IN_HOURS;
+// let MAX_WINDOW_REQUEST_COUNT;
+// let WINDOW_LOG_INTERVAL_IN_HOURS;
 
 /**
  * Guards are the middleware to "protet" routes.
@@ -38,22 +38,26 @@ function ensureUserLoggedIn(req, res, next) {
  * Make sure the rate limit is respected
  **/
 
+redisClient.on("error", (err) => console.log("Redis Client Error", err));
+
+let WINDOW_SIZE_IN_HOURS = 24;
+let MAX_WINDOW_REQUEST_COUNT = 100;
+let WINDOW_LOG_INTERVAL_IN_HOURS = 1;
+
 const redisRateLimiter = async (req, res, next) => {
   redisClient.on("connect", function () {
     console.log("connected");
   });
-
   try {
     // check that redis client exists
     if (!redisClient) {
       throw new Error("Redis client does not exist!");
     }
+    // let key = await redisClient.get(req.ip);
 
     let key = _getToken(req);
-
-    console.log("key: ", key);
     if (key == null) {
-      console.log("here for NON auth");
+      console.log("here for non auth");
       key = req.ip;
       WINDOW_SIZE_IN_HOURS = 10;
       MAX_WINDOW_REQUEST_COUNT = 100;
@@ -64,9 +68,12 @@ const redisRateLimiter = async (req, res, next) => {
       MAX_WINDOW_REQUEST_COUNT = 200;
       WINDOW_LOG_INTERVAL_IN_HOURS = 1;
     }
-    // fetch records of current user using IP or token, returns null when no record is found
-    const record = await redisClient.get(key);
+    let record = await redisClient.get(key);
+
+    // fetch records of current user using IP address, returns null when no record is found
+
     const currentRequestTime = moment();
+    console.log("key: ", key);
     console.log("record: ", record);
     //  if no record is found , create a new record for user and store to redis
     if (record == null) {
@@ -80,17 +87,13 @@ const redisRateLimiter = async (req, res, next) => {
       next();
     }
     // if record is found, parse it's value and calculate number of requests users has made within the last window
-    let data = [JSON.stringify(record)];
-    // data.push();
-
+    let data = JSON.parse(record);
     let windowStartTimestamp = moment()
       .subtract(WINDOW_SIZE_IN_HOURS, "hours")
       .unix();
-
     let requestsWithinWindow = data.filter((entry) => {
       return entry.requestTimeStamp > windowStartTimestamp;
     });
-
     console.log("requestsWithinWindow", requestsWithinWindow);
     let totalWindowRequestsCount = requestsWithinWindow.reduce(
       (accumulator, entry) => {
@@ -100,10 +103,11 @@ const redisRateLimiter = async (req, res, next) => {
     );
     // if number of requests made is greater than or equal to the desired maximum, return error
     if (totalWindowRequestsCount >= MAX_WINDOW_REQUEST_COUNT) {
-      //   res.status(429).jsend.error(
-      //       `You have exceeded the ${MAX_WINDOW_REQUEST_COUNT} requests in ${WINDOW_SIZE_IN_HOURS} hrs limit!`
-      //     );
-      res.status(429).send("Too many requests - try again later");
+      res
+        .status(429)
+        .jsend.error(
+          `You have exceeded the ${MAX_WINDOW_REQUEST_COUNT} requests in ${WINDOW_SIZE_IN_HOURS} hrs limit!`
+        );
     } else {
       // if number of requests made is less than allowed maximum, log new entry
       let lastRequestLog = data[data.length - 1];
@@ -124,7 +128,7 @@ const redisRateLimiter = async (req, res, next) => {
           requestCount: 1,
         });
       }
-      await redisClient.set(token, JSON.stringify(data));
+      await redisClient.set(key, JSON.stringify(data));
       next();
     }
   } catch (error) {
