@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { redisRateLimiter } = require("../middleware/guards");
+const { redisRateLimiter } = require("../middleware/rateLimiter");
 
 // /**
 //  * GETS /
