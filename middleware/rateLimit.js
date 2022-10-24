@@ -1,3 +1,7 @@
+//
+//  This page is only for me to have as a code reference from an example I took from the internet
+//
+
 const redis = require("redis");
 const moment = require("moment");
 
