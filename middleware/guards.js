@@ -8,9 +8,11 @@ const redisClient = redis.createClient({
   host: process.env.REDIS_HOST || "localhost",
 });
 
-// let WINDOW_SIZE_IN_HOURS;
-// let MAX_WINDOW_REQUEST_COUNT;
-// let WINDOW_LOG_INTERVAL_IN_HOURS;
+redisClient.on("error", (err) => console.log("Redis Client Error", err));
+
+let WINDOW_SIZE_IN_HOURS = 24;
+let MAX_WINDOW_REQUEST_COUNT = 100;
+let WINDOW_LOG_INTERVAL_IN_HOURS = 1;
 
 /**
  * Guards are the middleware to "protet" routes.
@@ -38,13 +40,9 @@ function ensureUserLoggedIn(req, res, next) {
  * Make sure the rate limit is respected
  **/
 
-redisClient.on("error", (err) => console.log("Redis Client Error", err));
-
-let WINDOW_SIZE_IN_HOURS = 24;
-let MAX_WINDOW_REQUEST_COUNT = 100;
-let WINDOW_LOG_INTERVAL_IN_HOURS = 1;
-
 const redisRateLimiter = async (req, res, next) => {
+  const ipAddress = req.ip;
+
   redisClient.on("connect", function () {
     console.log("connected");
   });
@@ -56,9 +54,10 @@ const redisRateLimiter = async (req, res, next) => {
     // let key = await redisClient.get(req.ip);
 
     let key = _getToken(req);
-    if (key == null) {
+
+    if (key == "") {
       console.log("here for non auth");
-      key = req.ip;
+      key = ipAddress;
       WINDOW_SIZE_IN_HOURS = 10;
       MAX_WINDOW_REQUEST_COUNT = 100;
       WINDOW_LOG_INTERVAL_IN_HOURS = 1;
@@ -101,11 +100,12 @@ const redisRateLimiter = async (req, res, next) => {
       },
       0
     );
+
     // if number of requests made is greater than or equal to the desired maximum, return error
     if (totalWindowRequestsCount >= MAX_WINDOW_REQUEST_COUNT) {
       res
         .status(429)
-        .jsend.error(
+        .send(
           `You have exceeded the ${MAX_WINDOW_REQUEST_COUNT} requests in ${WINDOW_SIZE_IN_HOURS} hrs limit!`
         );
     } else {
