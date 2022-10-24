@@ -1,13 +1,24 @@
 const express = require("express");
 const router = express.Router();
-const { ensureUserLoggedIn } = require("../middleware/guards");
+const { redisRateLimiter } = require("../middleware/guards");
 
 // /**
-//  * GET /
+//  * GETS /
 //  **/
 
-router.get("/", function (req, res, next) {
-  res.send({ message: "Welcome to the AuthAuth homepage! Try /users" });
+router.get("/", redisRateLimiter, async (req, res, next) => {
+  res.send({
+    message: "Welcome to the homepage! Try ´/users´ for private routes",
+  });
+});
+
+// /**
+//  * POSTS /
+//  **/
+
+router.post("/", redisRateLimiter, async (req, res, next) => {
+  // allow access to resources
+  res.send("Accessed the precious resources!");
 });
 
 module.exports = router;

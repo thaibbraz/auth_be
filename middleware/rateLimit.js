@@ -1,71 +1,23 @@
-const jwt = require("jsonwebtoken");
-const { SECRET_KEY } = require("../config");
-
+const redis = require("redis");
 const moment = require("moment");
-const redis = require("ioredis");
-const redisClient = redis.createClient({
-  port: process.env.REDIS_PORT || 6379,
-  host: process.env.REDIS_HOST || "localhost",
-});
 
-let WINDOW_SIZE_IN_HOURS;
-let MAX_WINDOW_REQUEST_COUNT;
-let WINDOW_LOG_INTERVAL_IN_HOURS;
+const redisClient = redis.createClient();
+redisClient.on("error", (err) => console.log("Redis Client Error", err));
 
-/**
- * Guards are the middleware to "protet" routes.
- **/
+const WINDOW_SIZE_IN_HOURS = 1;
+const MAX_WINDOW_REQUEST_COUNT = 100;
+const WINDOW_LOG_INTERVAL_IN_HOURS = 1;
 
-/**
- * Make sure the user is logged in
- **/
-
-function ensureUserLoggedIn(req, res, next) {
-  let token = _getToken(req);
-  if (token == null) return res.sendStatus(401);
-
-  try {
-    // Throws error on invalid/missing token
-    jwt.verify(token, SECRET_KEY);
-    // If we get here, a valid token was passed
-    next();
-  } catch (err) {
-    res.status(401).send({ error: "Unauthorized" });
-  }
-}
-
-/**
- * Make sure the rate limit is respected
- **/
-
-const redisRateLimiter = async (req, res, next) => {
-  redisClient.on("connect", function () {
-    console.log("connected");
-  });
-
+customRedisRateLimiter = async (req, res, next) => {
+  await redisClient.connect();
   try {
     // check that redis client exists
     if (!redisClient) {
       throw new Error("Redis client does not exist!");
+      process.exit(1);
     }
-
-    let key = _getToken(req);
-
-    console.log("key: ", key);
-    if (key == null) {
-      console.log("here for NON auth");
-      key = req.ip;
-      WINDOW_SIZE_IN_HOURS = 10;
-      MAX_WINDOW_REQUEST_COUNT = 100;
-      WINDOW_LOG_INTERVAL_IN_HOURS = 1;
-    } else {
-      console.log("here for auth");
-      WINDOW_SIZE_IN_HOURS = 10;
-      MAX_WINDOW_REQUEST_COUNT = 200;
-      WINDOW_LOG_INTERVAL_IN_HOURS = 1;
-    }
-    // fetch records of current user using IP or token, returns null when no record is found
-    const record = await redisClient.get(key);
+    // fetch records of current user using IP address, returns null when no record is found
+    const record = await redisClient.get(req.ip);
     const currentRequestTime = moment();
     console.log("record: ", record);
     //  if no record is found , create a new record for user and store to redis
@@ -76,12 +28,12 @@ const redisRateLimiter = async (req, res, next) => {
         requestCount: 1,
       };
       newRecord.push(requestLog);
-      await redisClient.set(key, JSON.stringify(newRecord));
+      await redisClient.set(req.ip, JSON.stringify(newRecord));
       next();
     }
     // if record is found, parse it's value and calculate number of requests users has made within the last window
-    let data = [JSON.stringify(record)];
-    // data.push();
+    let data = [];
+    data.push(record);
 
     let windowStartTimestamp = moment()
       .subtract(WINDOW_SIZE_IN_HOURS, "hours")
@@ -124,27 +76,13 @@ const redisRateLimiter = async (req, res, next) => {
           requestCount: 1,
         });
       }
-      await redisClient.set(token, JSON.stringify(data));
+      await redisClient.set(req.ip, JSON.stringify(data));
       next();
     }
   } catch (error) {
     next(error);
   }
 };
-
-function _getToken(req) {
-  // Return '' if header not found
-  if (!("authorization" in req.headers)) {
-    return "";
-  }
-  // Split header into 'Bearer' and token
-  let authHeader = req.headers["authorization"];
-  let [str, token] = authHeader.split(" ");
-
-  return str === "Bearer" ? token : "";
-}
-
 module.exports = {
-  ensureUserLoggedIn,
-  redisRateLimiter,
+  customRedisRateLimiter,
 };
