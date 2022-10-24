@@ -3,6 +3,8 @@ const { SECRET_KEY } = require("../config");
 
 const moment = require("moment");
 const redis = require("ioredis");
+const IP = require("ip");
+
 const redisClient = redis.createClient({
   port: process.env.REDIS_PORT || 6379,
   host: process.env.REDIS_HOST || "localhost",
@@ -41,8 +43,7 @@ function ensureUserLoggedIn(req, res, next) {
  **/
 
 const redisRateLimiter = async (req, res, next) => {
-  const ipAddress = req.ip;
-
+  const ipAddress = IP.address();
   redisClient.on("connect", function () {
     console.log("connected");
   });
