@@ -4,6 +4,7 @@
 2. Express
 3. JWT
 4. Redis
+5. Jest
 
 # Prerequisites
 
