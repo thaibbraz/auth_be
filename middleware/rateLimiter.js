@@ -10,9 +10,9 @@ const redisClient = redis.createClient({
 
 redisClient.on("error", (err) => console.log("Redis Client Error", err));
 
-let WINDOW_SIZE_IN_HOURS = 24;
-let MAX_WINDOW_REQUEST_COUNT = 100;
-let WINDOW_LOG_INTERVAL_IN_HOURS = 1;
+let WINDOW_SIZE_IN_HOURS = 0;
+let MAX_WINDOW_REQUEST_COUNT = 0;
+let WINDOW_LOG_INTERVAL_IN_HOURS = 0;
 
 const redisRateLimiter = async (req, res, next) => {
   const ipAddress = getIp(req);
@@ -45,8 +45,7 @@ const redisRateLimiter = async (req, res, next) => {
     // fetch records of current user using IP address, returns null when no record is found
 
     const currentRequestTime = moment();
-    console.log("key: ", key);
-    console.log("record: ", record);
+
     //  if no record is found , create a new record for user and store to redis
     if (record == null) {
       let newRecord = [];
