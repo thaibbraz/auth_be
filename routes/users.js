@@ -1,10 +1,8 @@
 var express = require("express");
 var router = express.Router();
 const jwt = require("jsonwebtoken");
-const {
-  ensureUserLoggedIn,
-  redisRateLimiter,
-} = require("../middleware/guards");
+const { ensureUserLoggedIn } = require("../middleware/guards");
+const { redisRateLimiter } = require("../middleware/rateLimiter");
 
 require("dotenv").config();
 
