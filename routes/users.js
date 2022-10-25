@@ -6,8 +6,6 @@ const { redisRateLimiter } = require("../middleware/rateLimiter");
 
 require("dotenv").config();
 
-// Example:
-
 router.get("/", redisRateLimiter, ensureUserLoggedIn, async (req, res) => {
   res.send({ message: "Here is your Members Only content from the server..." });
 });
