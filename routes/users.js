@@ -8,11 +8,11 @@ require("dotenv").config();
 
 // Example:
 
-router.get("/", redisRateLimiter, ensureUserLoggedIn, async (req, res) => {
+router.get("/", ensureUserLoggedIn, async (req, res) => {
   res.send({ message: "Here is your Members Only content from the server..." });
 });
 
-router.post("/login", redisRateLimiter, async (req, res) => {
+router.post("/login", async (req, res) => {
   let { username } = req.body;
   let user = { name: username };
 
