@@ -16,14 +16,16 @@ let WINDOW_LOG_INTERVAL_IN_HOURS = 1;
 
 const redisRateLimiter = async (req, res, next) => {
   const ipAddress = getIp(req);
+
+  // check that redis client exists
+  if (!redisClient) {
+    throw new Error("Redis client does not exist!");
+  }
+
   redisClient.on("connect", function () {
     console.log("connected");
   });
   try {
-    // check that redis client exists
-    if (!redisClient) {
-      throw new Error("Redis client does not exist!");
-    }
     // let key = await redisClient.get(req.ip);
 
     let key = getToken(req);
