@@ -36,28 +36,28 @@ describe("GET /users without auth", () => {
     expect(response.statusCode).toBe(401);
     expect(response.body).toEqual({ error: "Unauthorized" });
   });
+  describe("GET /users with auth", () => {
+    let token = "";
+    it("requires login", async () => {
+      const response = await request("http://localhost:3000")
+        .post("/users/login")
+        .send({
+          username: "test",
+        });
+      expect(response.statusCode).toBe(200);
+      token = response.body;
+    });
 
-  // it("Login should work", async () => {
-  //   const response = await request("http://localhost:3000")
-  //     .post("/users/login")
-  //     .send({
-  //       username: "test",
-  //     });
+    it("authorizes only correct users", async () => {
+      console.log("TOKEN", token.accessToken);
+      const response = await request("http://localhost:3000")
+        .get("/users")
+        .set("Authorization", "Bearer " + token.accessToken);
 
-  //   expect(response.statusCode).toBe(200);
-  //   let auth = response.body.accessToken;
-  //   console.log("auth", auth);
-  // });
-
-  it("authorizes only correct users", async () => {
-    const response = await request("http://localhost:3000")
-      .get("/users")
-      .set(
-        "authorization",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGhhaW5hIiwiaWF0IjoxNjY2Njk2NDA3fQ.9IKgbjHtJrK7achAcv08fPLyL7wfXJEpTr1MeiH-1ZY"
-      );
-
-    expect(response.statusCode).toBe(200);
-    // expect(response.body).toEqual({ error: "Unauthorized" });
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toEqual({
+        message: "Here is your Members Only content from the server...",
+      });
+    });
   });
 });
