@@ -7,9 +7,13 @@ const { redisRateLimiter } = require("../middleware/rateLimiter");
 //  **/
 
 router.get("/", redisRateLimiter, async (req, res, next) => {
-  res.send({
-    message: "Welcome to the homepage! Try ´/users´ for private routes",
-  });
+  try {
+    res.send({
+      message: "Welcome to the homepage! Try ´/users´ for private routes",
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // /**
@@ -18,7 +22,11 @@ router.get("/", redisRateLimiter, async (req, res, next) => {
 
 router.post("/", redisRateLimiter, async (req, res, next) => {
   // allow access to resources
-  res.send({ message: "Accessed the precious resources!" });
+  try {
+    res.send({ message: "Accessed the precious resources!" });
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = router;

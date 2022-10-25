@@ -7,17 +7,26 @@ const { redisRateLimiter } = require("../middleware/rateLimiter");
 require("dotenv").config();
 
 router.get("/", redisRateLimiter, ensureUserLoggedIn, async (req, res) => {
-  res.send({ message: "Here is your Members Only content from the server..." });
+  try {
+    res.send({
+      message: "Here is your Members Only content from the server...",
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.post("/login", redisRateLimiter, async (req, res) => {
-  let { username } = req.body;
-  let user = { name: username };
+  try {
+    let { username } = req.body;
+    let user = { name: username };
 
-  // Create token containing user name
-  let token = jwt.sign(user, process.env.SECRET_KEY);
-
-  res.json({ accessToken: token });
+    // Create token containing user name
+    let token = jwt.sign(user, process.env.SECRET_KEY);
+    res.json({ accessToken: token });
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = router;
