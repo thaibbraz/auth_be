@@ -18,7 +18,7 @@ router.get("/", redisRateLimiter, async (req, res, next) => {
 
 router.post("/", redisRateLimiter, async (req, res, next) => {
   // allow access to resources
-  res.send("Accessed the precious resources!");
+  res.send({ message: "Accessed the precious resources!" });
 });
 
 module.exports = router;

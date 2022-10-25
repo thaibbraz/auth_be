@@ -1,4 +1,3 @@
-const redis = require("redis");
 const moment = require("moment");
 const redis = require("ioredis");
 const IP = require("ip");
